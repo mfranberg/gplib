@@ -1,0 +1,9 @@
+Package: gplib
+Type: Package
+Title: A naive implementation of a Gaussian Process Regression.
+Version: 0.1
+Date: 2015-05-09
+Author: Mattias Franberg
+Maintainer: Mattias Franberg <mattias.franberg@scilifelab.se>
+Description: A naive implementation of a Gaussian Process Regression.
+License: BSD
