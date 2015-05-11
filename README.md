@@ -14,7 +14,6 @@ For example, the following code:
 
     x = -10 + 20 * runif( 100 )
     y = sin( 0.5*x ) + rnorm( 100, 0, 0.5 )
-    original = data.frame( x = x, y = y )
     stats = gp( y ~ x )
     plot( stats, true_y = function(x) sin(0.5*x) )
 
