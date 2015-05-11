@@ -1,1 +1,11 @@
-exportPattern("^[[:alpha:]]+")
+export(
+    "make.kernel",
+    "gp",
+    "gp.fit"
+    )
+
+S3method("model.matrix", "gp")
+S3method("predict", "gp")
+S3method("print", "gp")
+S3method("plot", "gp")
+S3method("logLik", "gp")
