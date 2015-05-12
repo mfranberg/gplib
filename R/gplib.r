@@ -110,7 +110,7 @@ gp.fit = function(X, y, kernel = kernel, optimize = TRUE, startp = kernel$params
         K = gp.compute_K( X, kernel, kernel.params )
         
         L = chol( K )
-        alpha = solve( L, solve( t( L ), y ) )
+        alpha = backsolve( L, forwardsolve( t( L ), y ) )
         loglik = -0.5 * t( y ) %*% alpha - sum( diag( L ) ) - 0.5 * n * log( 2 * pi )
         
         list( L = L, alpha = alpha, loglik = loglik, kernel = kernel )
@@ -149,7 +149,7 @@ gp.fit = function(X, y, kernel = kernel, optimize = TRUE, startp = kernel$params
 
 model.matrix.gp = function(object)
 {
-    model.matrix( object$model )
+    model.matrix( object$model, object$model )
 }
 
 print.gp = function(x)
@@ -185,7 +185,7 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
     }
     else
     {
-        Xstar = model.matrix( object )
+        Xstar = model.matrix( object$model, object$model )
     }
     
     X = model.matrix( object$model, object$model )
@@ -266,7 +266,8 @@ plot.gp = function(object, true_y = NULL)
         prediction$y = yold
         prediction$residual = prediction$fit - yold
         ggplot( prediction, aes( x = fit, y = residual ) ) +
-            geom_point(  ) + geom_abline( intercept = 0, slope = 0 )
+            geom_point(  ) + geom_abline( intercept = 0, slope = 0 ) +
+            scale_x_continuous( "fitted value" ) + scale_y_continuous( "residual" )
     }
 }
 
@@ -277,4 +278,13 @@ test = function()
     stats = gp( y ~ x, kernel = make.kernel( "matern32" ) )
     
     plot( stats, true_y = function(x) sin( 0.5*x ) )
+}
+
+test2 = function()
+{
+    x1 = -10 + 20 * runif( 100 )
+    x2 = -10 + 20 * runif( 100 )
+    y = exp( -x1^2 - x2^2 ) + rnorm( 100, 0, 0.25 )
+    stats = gp( y ~ x1 + x2, kernel = make.kernel( "matern32" ) )
+    plot( stats )
 }
