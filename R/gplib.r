@@ -33,13 +33,18 @@ gp = function(formula, data, kernel = make.kernel( "squared_exponential" ), opti
         data = environment( formula )
     }
     
-    m = model.frame( formula, data )
-    X = model.matrix( formula, m )
-    y = model.response( m )
+    mf = match.call( expand.dots = FALSE )
+    m = match( c( "formula", "data" ), names( mf ), 0L )
+    mf = mf[ c( 1L, m ) ]
+    mf[[ 1L ]] = quote( stats::model.frame )
+    mf = eval( mf, parent.frame( ) )
+    
+    X = model.matrix( formula, mf )
+    y = model.response( mf )
     
     fit = gp.fit( X, y, kernel, optimize = optimize, startp = startp )
     
-    z = c( fit, list( model = m ) )
+    z = c( fit, list( model = mf ) )
     class( z ) = "gp"
     
     return( z )
@@ -168,6 +173,7 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
     {
         Xstar = model.matrix( object )
     }
+    
     X = model.matrix( object )
     Kstar = matrix( 0, nrow( Xstar ), nrow( X ) )
     for(i in 1:nrow( Xstar ) )
@@ -206,7 +212,9 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
 
 plot.gp = function(object, true_y = NULL)
 {
-    X = model.matrix( object )
+    tt = terms( object$model )
+    X = model.matrix( tt )
+    yold = model.response( tt )
     if( ncol( X ) == 1 || ( ncol( X ) == 2 && all( X[ ,1 ] == 1 ) ) )
     {
         xname = colnames( X )[ 1 ]
@@ -216,8 +224,6 @@ plot.gp = function(object, true_y = NULL)
             xname = colnames( X )[ 2 ]
             xold = X[ ,2 ]
         }
-        
-        yold = model.response( object$model )
         
         xnew = seq( min( xold ), max( xold ), (max( xold ) - min( xold ))/1000 )
         new_data = data.frame( x = xnew )
@@ -243,7 +249,6 @@ plot.gp = function(object, true_y = NULL)
     }
     else
     {
-        yold = model.response( object$model )
         prediction = as.data.frame( predict( object, interval = "prediction" ) )
         prediction$y = yold
         prediction$residual = prediction$fit - yold
