@@ -2,8 +2,8 @@ library( ggplot2 )
 
 make.kernel = function(kernel, kernel.params)
 {
+    name = kernel
     switch(kernel, squared_exponential = {
-        name = kernel
         params = c( 0, 0, 0 )
         if( !missing( kernel.params ) )
         {
@@ -16,6 +16,20 @@ make.kernel = function(kernel, kernel.params)
         kernelgrad = function(x1, x2, kernel.params, same = FALSE) c( same * exp( kernel.params[ 1 ] ),
                                                                       2*exp( kernel.params[ 2 ] ) * exp( -0.5*sum( (x1-x2)^2 ) / exp( kernel.params[ 3 ] )^2 ),
                                                                       exp( kernel.params[ 2 ] ) * exp( -0.5*sum( (x1-x2)^2 ) / exp( kernel.params[ 3 ] )^2 ) * -0.5*sum( (x1-x2)^2 ) / exp( kernel.params[ 3 ] )^2 )
+    }, matern32 = {
+        params = c( 0, 0, 0 )
+        if( !missing( kernel.params ) )
+        {
+            params = log( kernel.params )
+        }
+        
+        params.names = c( "sigma", "sigmak", "rho" )
+        params.format = function( p ) c( sqrt( exp( p[ 1 ] ) ), exp( p[ 2:3 ] ) )
+        d = function(x1,x2) sqrt(sum((x1-x2)^2))
+        kernelfunc = function(x1, x2, kernel.params, same = FALSE) exp( kernel.params[ 2 ] ) * (1 + sqrt(3)*d(x1,x2) / exp( kernel.params[ 3 ] ) ) * exp( -sqrt(3)*d(x1,x2) / exp( kernel.params[ 3 ] ) ) + same * exp( kernel.params[ 1 ] )
+        kernelgrad = function(x1, x2, kernel.params, same = FALSE) c( same * exp( kernel.params[ 1 ] ),
+                                                                      (sqrt(3)*d(x1,x2) + exp(kernel.params[2]) )*exp(-sqrt(3)*d(x1,x2)/exp(kernel.params[ 3]))*exp(-kernel.params[3] + kernel.params[2]),
+                                                                      3*d(x1,x2)^2 * exp( kernel.params[ 2 ] ) * exp( -sqrt(3)*d(x1,x2)/exp(kernel.params[ 3 ]) ) * exp( -2*kernel.params[3]) )
     }, stop( gettextf( "%s kernel not recognised", sQuote( kernel ) ), domain = NA ) )
     
     structure( list( name = name,
@@ -174,7 +188,7 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
         Xstar = model.matrix( object )
     }
     
-    X = model.matrix( object )
+    X = model.matrix( object$model, object$model )
     Kstar = matrix( 0, nrow( Xstar ), nrow( X ) )
     for(i in 1:nrow( Xstar ) )
     {
@@ -211,10 +225,9 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
 }
 
 plot.gp = function(object, true_y = NULL)
-{
-    tt = terms( object$model )
-    X = model.matrix( tt )
-    yold = model.response( tt )
+{    
+    X = model.matrix( object$model, object$model )
+    yold = model.extract( object$model, "response" )
     if( ncol( X ) == 1 || ( ncol( X ) == 2 && all( X[ ,1 ] == 1 ) ) )
     {
         xname = colnames( X )[ 1 ]
@@ -260,7 +273,8 @@ plot.gp = function(object, true_y = NULL)
 test = function()
 {
     x = -10 + 20 * runif( 100 )
-    y = sin( 0.5*x ) + rnorm( 100, 0, 0.5 )
-    stats = gp( y ~ x )
-    plot( stats, true_y = function(x) sin(0.5*x) )
+    y = sin( 0.5*x ) + rnorm( 100, 0, 0.25 )
+    stats = gp( y ~ x, kernel = make.kernel( "matern32" ) )
+    
+    plot( stats, true_y = function(x) sin( 0.5*x ) )
 }
