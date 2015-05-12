@@ -194,8 +194,8 @@ predict.gp = function(object, newdata, X, level = 0.95, interval = c( "none", "p
     }
     else if( interval == "prediction" )
     {
-        lower = qnorm( 1 - level, fbar, V )
-        upper = qnorm( level, fbar, V )
+        lower = qnorm( 1 - level, fbar, sqrt( V ) )
+        upper = qnorm( level, fbar, sqrt( V ) )
         
         ret = cbind( fbar, lower, upper )
         colnames( ret ) = c( "fit", "lwr", "upr" )
@@ -256,7 +256,6 @@ test = function()
 {
     x = -10 + 20 * runif( 100 )
     y = sin( 0.5*x ) + rnorm( 100, 0, 0.5 )
-    original = data.frame( x = x, y = y )
     stats = gp( y ~ x )
     plot( stats, true_y = function(x) sin(0.5*x) )
 }
